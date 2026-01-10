@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   getAllPayouts,
   getAllProjects,
+  getAllCommissions,
   schedulePayout,
   markPayoutPaid,
 } from '@/actions/admin';
@@ -26,13 +27,15 @@ import {
 } from '@/components/ui/select';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
-import type { CommissionPayout, Project } from '@/lib/db/types';
+import type { CommissionPayout, Project, PartnerCommission } from '@/lib/db/types';
 import { Skeleton, SkeletonTableRows } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
 
 export default function AdminPayoutsPage() {
   const [payouts, setPayouts] = useState<CommissionPayout[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [allProjects, setAllProjects] = useState<Project[]>([]);
+  const [eligibleProjects, setEligibleProjects] = useState<Project[]>([]);
+  const [commissions, setCommissions] = useState<PartnerCommission[]>([]);
   const [loading, setLoading] = useState(true);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
 
@@ -45,19 +48,35 @@ export default function AdminPayoutsPage() {
 
   const loadData = async () => {
     try {
-      const [payoutsData, projectsData] = await Promise.all([
+      const [payoutsData, projectsData, commissionsData] = await Promise.all([
         getAllPayouts(),
         getAllProjects(),
+        getAllCommissions(),
       ]);
       setPayouts(payoutsData);
-      // Show projects that are WON or in commission/payment stages
+      setCommissions(commissionsData);
+      setAllProjects(projectsData);
+
+      // Only show projects in selector that:
+      // 1. Have commission configured
+      // 2. Are in WON or payment-related statuses
+      const projectIdsWithCommission = new Set(
+        commissionsData.map((c) => c.projectId.toString())
+      );
+
       const eligibleStatuses = [
         'WON',
         'PAYMENT_RECEIVED',
         'COMMISSION_PENDING',
         'COMMISSION_PARTIALLY_PAID',
       ];
-      setProjects(projectsData.filter((p) => eligibleStatuses.includes(p.status)));
+
+      const projectsWithCommission = projectsData.filter((p) =>
+        projectIdsWithCommission.has(p._id.toString()) &&
+        eligibleStatuses.includes(p.status)
+      );
+
+      setEligibleProjects(projectsWithCommission);
     } catch (error) {
       toast({
         title: 'Error',
@@ -125,6 +144,17 @@ export default function AdminPayoutsPage() {
         variant: 'destructive',
       });
     }
+  };
+
+  // Create a map for quick project lookup
+  const projectMap = new Map(
+    allProjects.map((project) => [project._id.toString(), project])
+  );
+
+  const getProjectName = (projectId: string) => {
+    const project = projectMap.get(projectId);
+    if (!project) return `Proyecto #${projectId.slice(-6)}`;
+    return `${project.publicAlias} — ${project.internalName}`;
   };
 
   const scheduledCount = payouts.filter(
@@ -197,7 +227,7 @@ export default function AdminPayoutsPage() {
           />
           <PayoutStat
             label="Elegibles"
-            value={projects.length}
+            value={eligibleProjects.length}
             helper="Proyectos disponibles para payout"
           />
         </div>
@@ -229,7 +259,7 @@ export default function AdminPayoutsPage() {
                 payouts.map((payout) => (
                   <tr key={payout._id.toString()} className="text-sm">
                     <td className="px-6 py-4 text-text-primary">
-                      Proyecto #{payout.projectId.toString().slice(-6)}
+                      {getProjectName(payout.projectId.toString())}
                     </td>
                     <td className="px-6 py-4">Parte {payout.part}</td>
                     <td className="px-6 py-4 font-semibold text-text-primary">
@@ -273,22 +303,22 @@ export default function AdminPayoutsPage() {
                 <Select
                   value={selectedProjectId}
                   onValueChange={setSelectedProjectId}
-                  disabled={projects.length === 0}
+                  disabled={eligibleProjects.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
-                      projects.length === 0
+                      eligibleProjects.length === 0
                         ? "No hay proyectos elegibles"
                         : "Selecciona un proyecto"
                     } />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.length === 0 ? (
+                    {eligibleProjects.length === 0 ? (
                       <div className="px-2 py-3 text-sm text-text-muted">
                         No hay proyectos con comisión configurada
                       </div>
                     ) : (
-                      projects.map((project) => (
+                      eligibleProjects.map((project) => (
                         <SelectItem
                           key={project._id.toString()}
                           value={project._id.toString()}
@@ -299,9 +329,9 @@ export default function AdminPayoutsPage() {
                     )}
                   </SelectContent>
                 </Select>
-                {projects.length === 0 && (
+                {eligibleProjects.length === 0 && (
                   <p className="mt-1 text-xs text-text-secondary">
-                    Crea proyectos desde Referidos y configura sus finanzas primero.
+                    Los proyectos deben estar en status WON y tener finanzas configuradas.
                   </p>
                 )}
               </div>

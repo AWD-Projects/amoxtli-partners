@@ -30,6 +30,7 @@ import type {
   ProjectFinancials,
   ReferralEvent,
   CommissionPayout,
+  PartnerCommission,
 } from '@/lib/db/types';
 
 // Get all partners
@@ -161,7 +162,21 @@ export async function createProject(data: {
     throw new Error('Referral not found');
   }
 
+  // Validate referral is WON
+  if (referral.status !== 'WON') {
+    throw new Error('Solo puedes crear proyectos para referidos ganados (status WON)');
+  }
+
+  // Check if project already exists for this referral
   const projectsCollection = await getProjectsCollection();
+  const existingProject = await projectsCollection.findOne({
+    referralId: new ObjectId(validated.referralId),
+  });
+
+  if (existingProject) {
+    throw new Error('Ya existe un proyecto para este referido');
+  }
+
   const result = await projectsCollection.insertOne({
     _id: new ObjectId(),
     referralId: new ObjectId(validated.referralId),
@@ -173,6 +188,22 @@ export async function createProject(data: {
   });
 
   return { success: true, projectId: result.insertedId.toString() };
+}
+
+// Check if referral has project
+export async function getReferralProject(referralId: string): Promise<Project | null> {
+  await requireAdmin();
+
+  const projectsCollection = await getProjectsCollection();
+  const project = await projectsCollection.findOne({
+    referralId: new ObjectId(referralId),
+  });
+
+  if (!project) {
+    return null;
+  }
+
+  return toPlainObject(project) as unknown as Project;
 }
 
 // Get all projects
@@ -265,6 +296,7 @@ export async function updateProjectFinancials(data: {
       },
       $setOnInsert: {
         _id: new ObjectId(),
+        projectId: new ObjectId(validated.projectId),
         createdAt: new Date(),
       },
     },
@@ -296,13 +328,25 @@ export async function schedulePayout(data: {
     throw new Error('Project not found');
   }
 
+  // Validate project status
+  const eligibleStatuses = [
+    'WON',
+    'PAYMENT_RECEIVED',
+    'COMMISSION_PENDING',
+    'COMMISSION_PARTIALLY_PAID',
+  ];
+
+  if (!eligibleStatuses.includes(project.status)) {
+    throw new Error('El proyecto debe estar en status WON o posterior para programar pagos');
+  }
+
   const commissionsCollection = await getPartnerCommissionsCollection();
   const commission = await commissionsCollection.findOne({
     projectId: new ObjectId(validated.projectId),
   });
 
   if (!commission) {
-    throw new Error('Commission not found - set financials first');
+    throw new Error('El proyecto debe tener finanzas configuradas para programar pagos');
   }
 
   const payoutAmount = commission.commissionAmountMxn / 2;
@@ -441,6 +485,18 @@ export async function markPayoutPaid(data: { payoutId: string }) {
   );
 
   return { success: true };
+}
+
+// Get all commissions
+export async function getAllCommissions(): Promise<PartnerCommission[]> {
+  await requireAdmin();
+
+  const commissionsCollection = await getPartnerCommissionsCollection();
+  const commissions = await commissionsCollection
+    .find({})
+    .sort({ createdAt: -1 })
+    .toArray();
+  return commissions.map((commission) => toPlainObject(commission)) as unknown as PartnerCommission[];
 }
 
 // Get all payouts

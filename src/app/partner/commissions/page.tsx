@@ -1,5 +1,5 @@
 import { requireActivePartner } from '@/lib/auth';
-import { getMyCommissions, getMyPayouts } from '@/actions/partner';
+import { getMyCommissions, getMyPayouts, getMyProjects } from '@/actions/partner';
 import { SidebarLayout } from '@/components/sidebar-layout';
 import { StatusBadge } from '@/components/status-badge';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -9,8 +9,21 @@ export const dynamic = 'force-dynamic';
 
 export default async function CommissionsPage() {
   await requireActivePartner();
-  const commissions = await getMyCommissions();
-  const payouts = await getMyPayouts();
+  const [commissions, payouts, projects] = await Promise.all([
+    getMyCommissions(),
+    getMyPayouts(),
+    getMyProjects(),
+  ]);
+
+  // Create a map for quick project lookup
+  const projectMap = new Map(
+    projects.map((project) => [project._id.toString(), project])
+  );
+
+  const getProjectName = (projectId: string) => {
+    const project = projectMap.get(projectId);
+    return project ? project.publicAlias : `Proyecto #${projectId.slice(-6)}`;
+  };
 
   const totalEarned = commissions.reduce(
     (sum, c) => sum + c.commissionAmountMxn,
@@ -74,7 +87,7 @@ export default async function CommissionsPage() {
                     commissions.map((commission) => (
                       <tr key={commission._id.toString()}>
                         <td className="px-6 py-4 whitespace-nowrap text-text-primary">
-                          Proyecto #{commission.projectId.toString().slice(-6)}
+                          {getProjectName(commission.projectId.toString())}
                         </td>
                         <td className="px-6 py-4 font-medium text-text-primary">
                           {formatCurrency(commission.commissionAmountMxn)}
@@ -123,7 +136,7 @@ export default async function CommissionsPage() {
                     payouts.map((payout) => (
                       <tr key={payout._id.toString()}>
                         <td className="px-6 py-4 whitespace-nowrap text-text-primary">
-                          Proyecto #{payout.projectId.toString().slice(-6)}
+                          {getProjectName(payout.projectId.toString())}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           Parte {payout.part}

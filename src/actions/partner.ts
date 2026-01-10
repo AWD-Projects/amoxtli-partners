@@ -13,6 +13,7 @@ import {
 } from '@/lib/db';
 import { generateReferralCode } from '@/lib/utils';
 import { createPartnerSchema } from '@/lib/validators';
+import { toPlainObject } from '@/lib/serializers';
 import type {
   SafeReferral,
   SafeProject,
@@ -60,14 +61,16 @@ export async function getMyReferrals(): Promise<SafeReferral[]> {
     .sort({ createdAt: -1 })
     .toArray();
 
-  // Return only safe fields
-  return referrals.map((ref) => ({
-    _id: ref._id,
-    referralCode: ref.referralCode,
-    status: ref.status,
-    createdAt: ref.createdAt,
-    lastUpdatedAt: ref.lastUpdatedAt,
-  }));
+  // Return only safe fields with proper serialization
+  return referrals.map((ref) =>
+    toPlainObject({
+      _id: ref._id,
+      referralCode: ref.referralCode,
+      status: ref.status,
+      createdAt: ref.createdAt,
+      lastUpdatedAt: ref.lastUpdatedAt,
+    }) as unknown as SafeReferral
+  );
 }
 
 // Create a new referral link
@@ -139,12 +142,21 @@ export async function getReferralTimeline(
 ): Promise<ReferralEvent[]> {
   const { partner } = await requireActivePartner();
 
+  // Validate ObjectId format
+  if (!ObjectId.isValid(referralId)) {
+    throw new Error('Referral not found');
+  }
+
   const referralsCollection = await getReferralsCollection();
   const referral = await referralsCollection.findOne({
     _id: new ObjectId(referralId),
   });
 
-  if (!referral || !referral.partnerId.equals(partner._id)) {
+  if (!referral) {
+    throw new Error('Referral not found');
+  }
+
+  if (!referral.partnerId.equals(partner._id)) {
     throw new Error('Referral not found');
   }
 
@@ -154,11 +166,13 @@ export async function getReferralTimeline(
     .sort({ createdAt: -1 })
     .toArray();
 
-  // Remove private notes (admin-only)
-  return events.map((event) => ({
-    ...event,
-    notePrivate: undefined,
-  }));
+  // Remove private notes (admin-only) and serialize
+  return events.map((event) =>
+    toPlainObject({
+      ...event,
+      notePrivate: undefined,
+    }) as unknown as ReferralEvent
+  );
 }
 
 // Get partner's projects (safe data only - NO financials)
@@ -171,13 +185,15 @@ export async function getMyProjects(): Promise<SafeProject[]> {
     .sort({ createdAt: -1 })
     .toArray();
 
-  // Return only safe fields (no internalName, no financials)
-  return projects.map((proj) => ({
-    _id: proj._id,
-    publicAlias: proj.publicAlias,
-    status: proj.status,
-    createdAt: proj.createdAt,
-  }));
+  // Return only safe fields (no internalName, no financials) with serialization
+  return projects.map((proj) =>
+    toPlainObject({
+      _id: proj._id,
+      publicAlias: proj.publicAlias,
+      status: proj.status,
+      createdAt: proj.createdAt,
+    }) as unknown as SafeProject
+  );
 }
 
 // Get partner's commissions (safe summary only - NO project financials)
@@ -190,7 +206,9 @@ export async function getMyCommissions(): Promise<PartnerCommission[]> {
     .sort({ createdAt: -1 })
     .toArray();
 
-  return commissions;
+  return commissions.map((commission) =>
+    toPlainObject(commission) as unknown as PartnerCommission
+  );
 }
 
 // Get partner's payouts
@@ -203,7 +221,9 @@ export async function getMyPayouts(): Promise<CommissionPayout[]> {
     .sort({ scheduledAt: -1 })
     .toArray();
 
-  return payouts;
+  return payouts.map((payout) =>
+    toPlainObject(payout) as unknown as CommissionPayout
+  );
 }
 
 // Get partner dashboard stats

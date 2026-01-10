@@ -71,7 +71,7 @@ export function Timeline({ events, showPrivateNotes = false }: TimelineProps) {
                     </p>
                   </div>
                   <div className="whitespace-nowrap text-right text-sm text-text-muted">
-                    <time dateTime={event.createdAt.toISOString()}>
+                    <time dateTime={new Date(event.createdAt).toISOString()}>
                       {formatDate(event.createdAt)}
                     </time>
                   </div>

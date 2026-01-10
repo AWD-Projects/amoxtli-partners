@@ -7,6 +7,7 @@ import {
   updateReferralStatus,
   getAdminReferralTimeline,
   createProject,
+  getReferralProject,
 } from '@/actions/admin';
 import { SidebarLayout } from '@/components/sidebar-layout';
 import { Timeline } from '@/components/timeline';
@@ -22,9 +23,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/use-toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
-import type { LeadIntake, ReferralEvent } from '@/lib/db/types';
+import type { LeadIntake, ReferralEvent, Project } from '@/lib/db/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/status-badge';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,7 @@ export default function AdminReferralDetailPage() {
 
   const [intake, setIntake] = useState<LeadIntake | null>(null);
   const [events, setEvents] = useState<ReferralEvent[]>([]);
+  const [existingProject, setExistingProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [newStatus, setNewStatus] = useState('');
@@ -56,6 +58,7 @@ export default function AdminReferralDetailPage() {
   const [internalName, setInternalName] = useState('');
 
   const currentStatus = events[0]?.toStatus;
+  const canCreateProject = currentStatus === 'WON' && !existingProject;
 
   useEffect(() => {
     loadData();
@@ -64,12 +67,14 @@ export default function AdminReferralDetailPage() {
 
   const loadData = async () => {
     try {
-      const [intakeData, eventsData] = await Promise.all([
+      const [intakeData, eventsData, projectData] = await Promise.all([
         getLeadIntake(referralId),
         getAdminReferralTimeline(referralId),
+        getReferralProject(referralId),
       ]);
       setIntake(intakeData);
       setEvents(eventsData);
+      setExistingProject(projectData);
     } catch (error) {
       toast({
         title: 'Error',
@@ -149,7 +154,10 @@ export default function AdminReferralDetailPage() {
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Error al crear proyecto',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Error al crear proyecto',
         variant: 'destructive',
       });
     }
@@ -258,31 +266,60 @@ export default function AdminReferralDetailPage() {
 
             <div className="rounded-2xl border border-surface-border bg-surface-card p-6 shadow-subtle">
               <h2 className="text-lg font-semibold text-text-primary">
-                Crear proyecto
+                Proyecto
               </h2>
-              <form onSubmit={handleCreateProject} className="mt-4 space-y-4">
-                <div>
-                  <Label>Alias público</Label>
-                  <Input
-                    value={publicAlias}
-                    onChange={(e) => setPublicAlias(e.target.value)}
-                    placeholder="ej., Proyecto #2024-001"
-                  />
-                </div>
 
-                <div>
-                  <Label>Nombre interno</Label>
-                  <Input
-                    value={internalName}
-                    onChange={(e) => setInternalName(e.target.value)}
-                    placeholder="ej., Acme Corp - Implementación CRM"
-                  />
+              {existingProject ? (
+                <div className="mt-4 space-y-4">
+                  <div className="rounded-lg bg-surface-bg/60 p-4">
+                    <p className="text-sm font-medium text-text-primary">
+                      {existingProject.publicAlias}
+                    </p>
+                    <p className="text-xs text-text-secondary mt-1">
+                      {existingProject.internalName}
+                    </p>
+                  </div>
+                  <Link href="/admin/projects">
+                    <Button variant="outline" className="w-full gap-2">
+                      Ver en Proyectos
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </Link>
                 </div>
+              ) : (
+                <>
+                  {currentStatus !== 'WON' && (
+                    <div className="mt-4 rounded-lg bg-yellow-50 p-4 text-sm text-yellow-800">
+                      El referido debe estar en status <strong>WON</strong> para crear un proyecto.
+                    </div>
+                  )}
+                  <form onSubmit={handleCreateProject} className="mt-4 space-y-4">
+                    <div>
+                      <Label>Alias público</Label>
+                      <Input
+                        value={publicAlias}
+                        onChange={(e) => setPublicAlias(e.target.value)}
+                        placeholder="ej., Proyecto #2024-001"
+                        disabled={!canCreateProject}
+                      />
+                    </div>
 
-                <Button type="submit" className="w-full">
-                  Crear proyecto
-                </Button>
-              </form>
+                    <div>
+                      <Label>Nombre interno</Label>
+                      <Input
+                        value={internalName}
+                        onChange={(e) => setInternalName(e.target.value)}
+                        placeholder="ej., Acme Corp - Implementación CRM"
+                        disabled={!canCreateProject}
+                      />
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={!canCreateProject}>
+                      Crear proyecto
+                    </Button>
+                  </form>
+                </>
+              )}
             </div>
           </div>
 

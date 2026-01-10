@@ -5,6 +5,7 @@ import { Timeline } from '@/components/timeline';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { EmptyState } from '@/components/empty-state';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,15 @@ export default async function ReferralDetailPage({
 }) {
   await requireActivePartner();
   const { id } = await params;
-  const events = await getReferralTimeline(id);
+
+  let events;
+  let error = false;
+
+  try {
+    events = await getReferralTimeline(id);
+  } catch (err) {
+    error = true;
+  }
 
   return (
     <SidebarLayout role="partner">
@@ -32,7 +41,14 @@ export default async function ReferralDetailPage({
         </h1>
 
         <div className="bg-card rounded-lg shadow-card p-6">
-          <Timeline events={events} />
+          {error ? (
+            <EmptyState
+              title="Referido no encontrado"
+              description="Este referido no existe o no tienes permiso para verlo."
+            />
+          ) : (
+            <Timeline events={events || []} />
+          )}
         </div>
       </div>
     </SidebarLayout>
