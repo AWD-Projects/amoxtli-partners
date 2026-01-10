@@ -50,7 +50,14 @@ export default function AdminPayoutsPage() {
         getAllProjects(),
       ]);
       setPayouts(payoutsData);
-      setProjects(projectsData.filter((p) => p.status === 'WON'));
+      // Show projects that are WON or in commission/payment stages
+      const eligibleStatuses = [
+        'WON',
+        'PAYMENT_RECEIVED',
+        'COMMISSION_PENDING',
+        'COMMISSION_PARTIALLY_PAID',
+      ];
+      setProjects(projectsData.filter((p) => eligibleStatuses.includes(p.status)));
     } catch (error) {
       toast({
         title: 'Error',
@@ -190,8 +197,8 @@ export default function AdminPayoutsPage() {
           />
           <PayoutStat
             label="Elegibles"
-            value={projects.filter((project) => project.status === 'WON').length}
-            helper="Proyectos con comisión activa"
+            value={projects.length}
+            helper="Proyectos disponibles para payout"
           />
         </div>
 
@@ -266,21 +273,37 @@ export default function AdminPayoutsPage() {
                 <Select
                   value={selectedProjectId}
                   onValueChange={setSelectedProjectId}
+                  disabled={projects.length === 0}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un proyecto" />
+                    <SelectValue placeholder={
+                      projects.length === 0
+                        ? "No hay proyectos elegibles"
+                        : "Selecciona un proyecto"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem
-                        key={project._id.toString()}
-                        value={project._id.toString()}
-                      >
-                        {project.publicAlias} — {project.internalName}
-                      </SelectItem>
-                    ))}
+                    {projects.length === 0 ? (
+                      <div className="px-2 py-3 text-sm text-text-muted">
+                        No hay proyectos con comisión configurada
+                      </div>
+                    ) : (
+                      projects.map((project) => (
+                        <SelectItem
+                          key={project._id.toString()}
+                          value={project._id.toString()}
+                        >
+                          {project.publicAlias} — {project.internalName}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                {projects.length === 0 && (
+                  <p className="mt-1 text-xs text-text-secondary">
+                    Crea proyectos desde Referidos y configura sus finanzas primero.
+                  </p>
+                )}
               </div>
 
               <div>

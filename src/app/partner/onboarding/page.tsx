@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
+import { BrandLogo } from '@/components/brand-logo';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -50,8 +51,8 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-card rounded-lg shadow-card p-8">
-        <h1 className="text-2xl font-bold text-brand mb-2">
-          Bienvenido a Amoxtli Partners
+        <h1 className="mb-4 flex justify-center">
+          <BrandLogo className="h-8 w-auto" priority sizes="200px" />
         </h1>
         <p className="text-text-muted mb-6">
           Completa tu perfil para comenzar.

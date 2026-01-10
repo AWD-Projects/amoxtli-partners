@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { SignOutButton, UserButton } from '@clerk/nextjs';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { BrandLogo } from '@/components/brand-logo';
 import {
   LayoutDashboard,
   Link2,
@@ -48,10 +49,14 @@ export function SidebarLayout({ children, role }: SidebarLayoutProps) {
   return (
     <div className="min-h-screen bg-surface-bg text-text-primary">
       <aside className="fixed inset-y-0 left-0 z-20 hidden w-72 flex-col border-r border-brand-active/40 bg-brand px-6 py-8 text-white lg:flex">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-white/70">Amoxtli</p>
-          <h1 className="text-2xl font-semibold">Partners</h1>
-          <p className="text-xs text-white/60">
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
+              <BrandLogo variant="icon" className="h-6 w-6" ariaHidden priority />
+            </span>
+            <BrandLogo className="h-6 w-auto" priority sizes="160px" />
+          </div>
+          <p className="text-xs text-white/70">
             {role === 'admin' ? 'Panel superadmin' : 'Panel partner'}
           </p>
         </div>
@@ -111,10 +116,19 @@ export function SidebarLayout({ children, role }: SidebarLayoutProps) {
       <div className="lg:pl-72">
         <header className="sticky top-0 z-10 flex items-center justify-between border-b border-surface-border bg-surface-bg/80 px-4 py-4 backdrop-blur lg:hidden">
           <div>
-            <p className="text-xs font-semibold text-text-secondary">
-              Amoxtli Partners
-            </p>
-            <p className="text-sm font-semibold text-text-primary">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-surface-border bg-white/70">
+                <BrandLogo
+                  variant="icon"
+                  className="h-5 w-5"
+                  ariaHidden
+                  priority
+                  sizes="40px"
+                />
+              </span>
+              <BrandLogo className="h-5 w-auto" priority sizes="140px" />
+            </div>
+            <p className="text-xs font-semibold text-text-primary mt-1">
               {role === 'admin' ? 'Panel superadmin' : 'Panel partner'}
             </p>
           </div>
