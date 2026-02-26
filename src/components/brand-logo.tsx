@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import wordmark from '@/assets/wordmark.svg';
+import wordmark from '@/assets/wordmark_blue.svg';
 import icon from '@/assets/icon.svg';
 
 type BrandLogoVariant = 'wordmark' | 'icon';

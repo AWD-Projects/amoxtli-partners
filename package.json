@@ -10,6 +10,7 @@
     "db:setup": "tsx --env-file=.env.local scripts/db-setup.ts"
   },
   "dependencies": {
+    "@clerk/clerk-js": "^5.125.2",
     "@clerk/nextjs": "^6.9.3",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -29,6 +30,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
+    "sileo": "^0.1.5",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.1"

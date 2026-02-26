@@ -92,7 +92,7 @@ export async function createReferralLink() {
   });
 
   if (activeThisMonth >= 5) {
-    throw new Error('Monthly referral limit reached (5 active referrals)');
+    throw new Error('Límite mensual de referidos alcanzado (5 referidos activos)');
   }
 
   // Generate unique referral code
@@ -125,7 +125,7 @@ export async function createReferralLink() {
     referralId: result.insertedId,
     actorRole: 'PARTNER',
     toStatus: 'LINK_CREATED',
-    notePublic: 'Referral link created',
+    notePublic: 'Enlace de referido creado',
     createdAt: now,
   });
 
@@ -144,7 +144,7 @@ export async function getReferralTimeline(
 
   // Validate ObjectId format
   if (!ObjectId.isValid(referralId)) {
-    throw new Error('Referral not found');
+    throw new Error('Referido no encontrado');
   }
 
   const referralsCollection = await getReferralsCollection();
@@ -153,11 +153,11 @@ export async function getReferralTimeline(
   });
 
   if (!referral) {
-    throw new Error('Referral not found');
+    throw new Error('Referido no encontrado');
   }
 
   if (!referral.partnerId.equals(partner._id)) {
-    throw new Error('Referral not found');
+    throw new Error('Referido no encontrado');
   }
 
   const eventsCollection = await getReferralEventsCollection();

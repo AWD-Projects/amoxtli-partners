@@ -19,7 +19,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { toast } from '@/components/ui/use-toast';
+import { sileo } from 'sileo';
+import { Loader2 } from 'lucide-react';
 import type { Project, ProjectFinancials } from '@/lib/db/types';
 import { Skeleton, SkeletonTableRows } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
@@ -30,6 +31,9 @@ export default function AdminProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [financials, setFinancials] = useState<ProjectFinancials | null>(null);
+
+  const [loadingFinancials, setLoadingFinancials] = useState(false);
+  const [savingFinancials, setSavingFinancials] = useState(false);
 
   const [amountCharged, setAmountCharged] = useState('');
   const [directCosts, setDirectCosts] = useState('');
@@ -44,11 +48,7 @@ export default function AdminProjectsPage() {
       const data = await getAllProjects();
       setProjects(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Error al cargar proyectos',
-        variant: 'destructive',
-      });
+      sileo.error({ title: 'Error', description: 'Error al cargar proyectos' });
     } finally {
       setLoading(false);
     }
@@ -56,9 +56,14 @@ export default function AdminProjectsPage() {
 
   const handleOpenFinancials = async (projectId: string) => {
     setSelectedProject(projectId);
+    setLoadingFinancials(true);
 
     try {
-      const data = await getProjectFinancials(projectId);
+      const data = await sileo.promise(getProjectFinancials(projectId), {
+        loading: { title: 'Cargando...', description: 'Obteniendo datos financieros' },
+        success: { title: 'Listo', description: 'Datos financieros cargados' },
+        error: { title: 'Error', description: 'Error al cargar datos financieros' },
+      });
       setFinancials(data);
 
       if (data) {
@@ -66,42 +71,34 @@ export default function AdminProjectsPage() {
         setDirectCosts(data.directCostsMxn.toString());
         setCommissionRate(data.commissionRate.toString());
       }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Error al cargar datos financieros',
-        variant: 'destructive',
-      });
+    } finally {
+      setLoadingFinancials(false);
     }
   };
 
   const handleSaveFinancials = async () => {
     if (!selectedProject) return;
 
+    setSavingFinancials(true);
     try {
-      const result = await updateProjectFinancials({
-        projectId: selectedProject,
-        amountChargedMxn: parseFloat(amountCharged),
-        directCostsMxn: parseFloat(directCosts),
-        commissionRate: parseFloat(commissionRate),
-      });
-
-      toast({
-        title: 'Éxito',
-        description: `Datos financieros guardados. Comisión: ${formatCurrency(
-          result.commissionAmountMxn
-        )}`,
-        variant: 'success',
-      });
+      const result = await sileo.promise(
+        updateProjectFinancials({
+          projectId: selectedProject,
+          amountChargedMxn: parseFloat(amountCharged),
+          directCostsMxn: parseFloat(directCosts),
+          commissionRate: parseFloat(commissionRate),
+        }),
+        {
+          loading: { title: 'Guardando...', description: 'Guardando datos financieros' },
+          success: (data) => ({ title: 'Éxito', description: `Datos financieros guardados. Comisión: ${formatCurrency(data.commissionAmountMxn)}` }),
+          error: { title: 'Error', description: 'Error al guardar datos financieros' },
+        }
+      );
 
       setSelectedProject(null);
       loadProjects();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Error al guardar datos financieros',
-        variant: 'destructive',
-      });
+    } finally {
+      setSavingFinancials(false);
     }
   };
 
@@ -212,7 +209,9 @@ export default function AdminProjectsPage() {
                         }
                         variant="outline"
                         size="sm"
+                        disabled={loadingFinancials && selectedProject === project._id.toString()}
                       >
+                        {loadingFinancials && selectedProject === project._id.toString() && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Finanzas
                       </Button>
                     </td>
@@ -293,7 +292,8 @@ export default function AdminProjectsPage() {
                 </div>
               )}
 
-              <Button onClick={handleSaveFinancials} className="w-full">
+              <Button onClick={handleSaveFinancials} className="w-full" disabled={savingFinancials}>
+                {savingFinancials && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Guardar Datos Financieros
               </Button>
             </div>

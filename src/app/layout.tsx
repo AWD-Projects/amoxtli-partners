@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { Space_Grotesk } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
-import { Toaster } from '@/components/ui/toaster';
+import { Toaster } from 'sileo';
+import { ClerkErrorBoundary } from '@/components/clerk-error-boundary';
 import './globals.css';
 
 const spaceGrotesk = Space_Grotesk({
@@ -20,11 +21,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider clerkJSUrl="/clerk/clerk.browser.js">
       <html lang="en">
         <body className={spaceGrotesk.className}>
-          {children}
-          <Toaster />
+          <ClerkErrorBoundary>
+            {children}
+          </ClerkErrorBoundary>
+          <Toaster position="top-right" />
         </body>
       </html>
     </ClerkProvider>

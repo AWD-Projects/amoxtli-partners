@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { createReferralLink } from '@/actions/partner';
 import { SidebarLayout } from '@/components/sidebar-layout';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
+import { sileo } from 'sileo';
 import { Copy, ArrowLeft } from 'lucide-react';
 
 export default function NewReferralPage() {
@@ -22,18 +22,9 @@ export default function NewReferralPage() {
       const fullUrl = `${window.location.origin}${result.url}`;
       setReferralUrl(fullUrl);
 
-      toast({
-        title: '¡Link de referido creado!',
-        description: 'Comparte este link con clientes potenciales.',
-        variant: 'success',
-      });
+      sileo.success({ title: '¡Link de referido creado!', description: 'Comparte este link con clientes potenciales.' });
     } catch (error) {
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'Error al crear el link',
-        variant: 'destructive',
-      });
+      sileo.error({ title: 'Error', description: error instanceof Error ? error.message : 'Error al crear el link' });
     } finally {
       setIsCreating(false);
     }
@@ -42,11 +33,7 @@ export default function NewReferralPage() {
   const copyToClipboard = () => {
     if (referralUrl) {
       navigator.clipboard.writeText(referralUrl);
-      toast({
-        title: '¡Copiado!',
-        description: 'Link de referido copiado al portapapeles.',
-        variant: 'success',
-      });
+      sileo.success({ title: '¡Copiado!', description: 'Link de referido copiado al portapapeles.' });
     }
   };
 

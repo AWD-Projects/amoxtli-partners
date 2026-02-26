@@ -22,8 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from '@/components/ui/use-toast';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { sileo } from 'sileo';
+import { ArrowLeft, ExternalLink, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import type { LeadIntake, ReferralEvent, Project } from '@/lib/db/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -54,6 +54,9 @@ export default function AdminReferralDetailPage() {
   const [notePublic, setNotePublic] = useState('');
   const [notePrivate, setNotePrivate] = useState('');
 
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
+
   const [publicAlias, setPublicAlias] = useState('');
   const [internalName, setInternalName] = useState('');
 
@@ -76,11 +79,7 @@ export default function AdminReferralDetailPage() {
       setEvents(eventsData);
       setExistingProject(projectData);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Error al cargar detalles del referido',
-        variant: 'destructive',
-      });
+      sileo.error({ title: 'Error', description: 'Error al cargar detalles del referido' });
     } finally {
       setLoading(false);
     }
@@ -90,38 +89,32 @@ export default function AdminReferralDetailPage() {
     e.preventDefault();
 
     if (!newStatus) {
-      toast({
-        title: 'Error',
-        description: 'Por favor selecciona un estado',
-        variant: 'destructive',
-      });
+      sileo.warning({ title: 'Atención', description: 'Por favor selecciona un estado' });
       return;
     }
 
+    setUpdatingStatus(true);
     try {
-      await updateReferralStatus({
-        referralId,
-        newStatus,
-        notePublic: notePublic || undefined,
-        notePrivate: notePrivate || undefined,
-      });
-
-      toast({
-        title: 'Éxito',
-        description: 'Estado actualizado exitosamente',
-        variant: 'success',
-      });
+      await sileo.promise(
+        updateReferralStatus({
+          referralId,
+          newStatus,
+          notePublic: notePublic || undefined,
+          notePrivate: notePrivate || undefined,
+        }),
+        {
+          loading: { title: 'Actualizando...', description: 'Cambiando estado del referido' },
+          success: { title: 'Éxito', description: 'Estado actualizado exitosamente' },
+          error: { title: 'Error', description: 'Error al actualizar estado' },
+        }
+      );
 
       setNewStatus('');
       setNotePublic('');
       setNotePrivate('');
       loadData();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Error al actualizar estado',
-        variant: 'destructive',
-      });
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -129,37 +122,28 @@ export default function AdminReferralDetailPage() {
     e.preventDefault();
 
     if (!publicAlias || !internalName) {
-      toast({
-        title: 'Error',
-        description: 'Por favor completa todos los campos',
-        variant: 'destructive',
-      });
+      sileo.warning({ title: 'Atención', description: 'Por favor completa todos los campos' });
       return;
     }
 
+    setCreatingProject(true);
     try {
-      await createProject({
-        referralId,
-        publicAlias,
-        internalName,
-      });
-
-      toast({
-        title: 'Éxito',
-        description: 'Proyecto creado exitosamente',
-        variant: 'success',
-      });
+      await sileo.promise(
+        createProject({
+          referralId,
+          publicAlias,
+          internalName,
+        }),
+        {
+          loading: { title: 'Creando...', description: 'Creando proyecto' },
+          success: { title: 'Éxito', description: 'Proyecto creado exitosamente' },
+          error: (err) => ({ title: 'Error', description: err instanceof Error ? err.message : 'Error al crear proyecto' }),
+        }
+      );
 
       router.push(`/admin/projects`);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'Error al crear proyecto',
-        variant: 'destructive',
-      });
+    } finally {
+      setCreatingProject(false);
     }
   };
 
@@ -258,7 +242,8 @@ export default function AdminReferralDetailPage() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={updatingStatus}>
+                  {updatingStatus && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Actualizar estado
                 </Button>
               </form>
@@ -314,7 +299,8 @@ export default function AdminReferralDetailPage() {
                       />
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={!canCreateProject}>
+                    <Button type="submit" className="w-full" disabled={!canCreateProject || creatingProject}>
+                      {creatingProject && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Crear proyecto
                     </Button>
                   </form>

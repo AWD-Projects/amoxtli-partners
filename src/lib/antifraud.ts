@@ -60,14 +60,14 @@ export function canSchedulePayout(
   if (currentMonthTotal + payoutAmount > MONTHLY_CAP) {
     return {
       allowed: false,
-      reason: `Would exceed monthly cap of ${MONTHLY_CAP} MXN`,
+      reason: `Excedería el tope mensual de ${MONTHLY_CAP} MXN`,
     };
   }
 
   if (currentYearTotal + payoutAmount > YEARLY_CAP) {
     return {
       allowed: false,
-      reason: `Would exceed yearly cap of ${YEARLY_CAP} MXN`,
+      reason: `Excedería el tope anual de ${YEARLY_CAP} MXN`,
     };
   }
 

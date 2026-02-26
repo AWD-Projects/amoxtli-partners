@@ -11,29 +11,49 @@ export interface AuthenticatedUser {
 }
 
 export async function requireSignedIn(): Promise<AuthenticatedUser> {
-  const { userId } = await auth();
+  let userId: string | null = null;
+
+  try {
+    const authResult = await auth();
+    userId = authResult.userId;
+  } catch (error) {
+    console.error('[Auth] Failed to get auth session:', error);
+    redirect('/sign-in');
+  }
 
   if (!userId) {
     redirect('/sign-in');
   }
 
-  const user = await currentUser();
+  let user;
+  try {
+    user = await currentUser();
+  } catch (error) {
+    console.error('[Auth] Failed to fetch current user from Clerk:', error);
+    redirect('/sign-in');
+  }
 
   if (!user) {
-    throw new Error('User not found');
+    redirect('/sign-in');
   }
 
   const email = user.emailAddresses[0]?.emailAddress;
 
   if (!email) {
-    throw new Error('User email not found');
+    console.error('[Auth] User has no email addresses:', userId);
+    redirect('/sign-in');
   }
 
   const isSuperAdmin = email === process.env.SUPER_ADMIN_EMAIL;
 
-  // Try to find partner record
-  const partnersCollection = await getPartnersCollection();
-  const partner = await partnersCollection.findOne({ clerkUserId: userId });
+  let partner: Partner | null = null;
+  try {
+    const partnersCollection = await getPartnersCollection();
+    partner = await partnersCollection.findOne({ clerkUserId: userId });
+  } catch (error) {
+    console.error('[Auth] Failed to query partners collection:', error);
+    // Continue without partner data - page can handle this
+  }
 
   return {
     clerkUserId: userId,

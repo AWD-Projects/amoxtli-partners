@@ -11,27 +11,22 @@ const options = {
   tlsAllowInvalidHostnames: false,
   retryWrites: true,
   w: 'majority' as const,
+  serverSelectionTimeoutMS: 10000,
+  connectTimeoutMS: 10000,
 };
 
-let client: MongoClient;
+// Use global variable in all environments to reuse connection across serverless invocations
+const globalWithMongo = global as typeof globalThis & {
+  _mongoClientPromise?: Promise<MongoClient>;
+};
+
 let clientPromise: Promise<MongoClient>;
 
-if (process.env.NODE_ENV === 'development') {
-  // In development mode, use a global variable to preserve the client across module reloads
-  const globalWithMongo = global as typeof globalThis & {
-    _mongoClientPromise?: Promise<MongoClient>;
-  };
-
-  if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    globalWithMongo._mongoClientPromise = client.connect();
-  }
-  clientPromise = globalWithMongo._mongoClientPromise;
-} else {
-  // In production mode, create a new client
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+if (!globalWithMongo._mongoClientPromise) {
+  const client = new MongoClient(uri, options);
+  globalWithMongo._mongoClientPromise = client.connect();
 }
+clientPromise = globalWithMongo._mongoClientPromise;
 
 export async function getDb(): Promise<Db> {
   const client = await clientPromise;

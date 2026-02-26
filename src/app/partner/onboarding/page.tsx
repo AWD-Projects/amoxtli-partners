@@ -9,7 +9,7 @@ import { createPartnerProfile } from '@/actions/partner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/use-toast';
+import { sileo } from 'sileo';
 import { BrandLogo } from '@/components/brand-logo';
 
 export default function OnboardingPage() {
@@ -30,19 +30,11 @@ export default function OnboardingPage() {
     try {
       await createPartnerProfile(data);
 
-      toast({
-        title: '¡Perfil creado!',
-        description: 'Tu perfil está pendiente de aprobación.',
-        variant: 'success',
-      });
+      sileo.success({ title: '¡Perfil creado!', description: 'Tu perfil está pendiente de aprobación.' });
 
       router.push('/partner/pending');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Error al crear el perfil',
-        variant: 'destructive',
-      });
+      sileo.error({ title: 'Error', description: error instanceof Error ? error.message : 'Error al crear el perfil' });
     } finally {
       setIsSubmitting(false);
     }

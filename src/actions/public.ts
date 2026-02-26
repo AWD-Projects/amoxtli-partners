@@ -28,17 +28,17 @@ export async function submitLeadIntake(data: {
   });
 
   if (!referral) {
-    throw new Error('Invalid referral code');
+    throw new Error('Código de referido inválido');
   }
 
   // Check if referral is still valid
   if (referral.protectionExpiresAt < new Date()) {
-    throw new Error('Referral link has expired');
+    throw new Error('El enlace de referido ha expirado');
   }
 
   // Check if referral is in correct status
   if (referral.status !== 'LINK_CREATED') {
-    throw new Error('This referral has already been submitted');
+    throw new Error('Este referido ya fue enviado');
   }
 
   // Get partner email for self-referral check
@@ -48,7 +48,7 @@ export async function submitLeadIntake(data: {
   });
 
   if (!partner) {
-    throw new Error('Partner not found');
+    throw new Error('Socio no encontrado');
   }
 
   // Check for self-referral (use partner's Clerk user ID to get email)
@@ -68,7 +68,7 @@ export async function submitLeadIntake(data: {
 
   if (existing) {
     throw new Error(
-      'This lead has already been registered by another partner'
+      'Este lead ya fue registrado por otro socio'
     );
   }
 
@@ -117,7 +117,7 @@ export async function submitLeadIntake(data: {
     actorRole: 'SYSTEM',
     fromStatus: 'LINK_CREATED',
     toStatus: 'INTAKE_SUBMITTED',
-    notePublic: 'Lead intake form submitted',
+    notePublic: 'Formulario de lead enviado',
     createdAt: new Date(),
   });
 
@@ -129,15 +129,15 @@ export async function validateReferralCode(code: string) {
   const referral = await referralsCollection.findOne({ referralCode: code });
 
   if (!referral) {
-    return { valid: false, reason: 'Invalid referral code' };
+    return { valid: false, reason: 'Código de referido inválido' };
   }
 
   if (referral.protectionExpiresAt < new Date()) {
-    return { valid: false, reason: 'Referral link has expired' };
+    return { valid: false, reason: 'El enlace de referido ha expirado' };
   }
 
   if (referral.status !== 'LINK_CREATED') {
-    return { valid: false, reason: 'This referral has already been submitted' };
+    return { valid: false, reason: 'Este referido ya fue enviado' };
   }
 
   return { valid: true };

@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/components/ui/use-toast';
+import { sileo } from 'sileo';
 
 export default function ReferralIntakePage() {
   const params = useParams();
@@ -35,21 +35,12 @@ export default function ReferralIntakePage() {
         ...data,
       });
 
-      toast({
-        title: '¡Éxito!',
-        description:
-          'Tu información ha sido enviada. Nos pondremos en contacto pronto.',
-        variant: 'success',
-      });
+      sileo.success({ title: '¡Éxito!', description: 'Tu información ha sido enviada. Nos pondremos en contacto pronto.' });
 
       // Redirect to success page or show success message
       router.push('/r/success');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Error al enviar',
-        variant: 'destructive',
-      });
+      sileo.error({ title: 'Error', description: error instanceof Error ? error.message : 'Error al enviar' });
     } finally {
       setIsSubmitting(false);
     }

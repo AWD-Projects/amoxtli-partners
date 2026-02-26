@@ -61,7 +61,7 @@ export async function updatePartnerStatus(data: {
   );
 
   if (result.matchedCount === 0) {
-    throw new Error('Partner not found');
+    throw new Error('Socio no encontrado');
   }
 
   return { success: true };
@@ -89,7 +89,7 @@ export async function getLeadIntake(referralId: string): Promise<LeadIntake> {
   });
 
   if (!intake) {
-    throw new Error('Lead intake not found');
+    throw new Error('Formulario de lead no encontrado');
   }
 
   return toPlainObject(intake) as unknown as LeadIntake;
@@ -112,7 +112,7 @@ export async function updateReferralStatus(data: {
   });
 
   if (!referral) {
-    throw new Error('Referral not found');
+    throw new Error('Referido no encontrado');
   }
 
   const oldStatus = referral.status;
@@ -159,7 +159,7 @@ export async function createProject(data: {
   });
 
   if (!referral) {
-    throw new Error('Referral not found');
+    throw new Error('Referido no encontrado');
   }
 
   // Validate referral is WON
@@ -280,7 +280,7 @@ export async function updateProjectFinancials(data: {
   });
 
   if (!project) {
-    throw new Error('Project not found');
+    throw new Error('Proyecto no encontrado');
   }
 
   // Create/update partner_commissions record (safe for partners to read)
@@ -325,7 +325,7 @@ export async function schedulePayout(data: {
   });
 
   if (!project) {
-    throw new Error('Project not found');
+    throw new Error('Proyecto no encontrado');
   }
 
   // Validate project status
@@ -405,7 +405,7 @@ export async function schedulePayout(data: {
   });
 
   if (existing) {
-    throw new Error(`Payout part ${validated.part} already exists`);
+    throw new Error(`El payout parte ${validated.part} ya existe`);
   }
 
   await payoutsCollection.insertOne({
@@ -458,7 +458,7 @@ export async function markPayoutPaid(data: { payoutId: string }) {
   });
 
   if (!payout) {
-    throw new Error('Payout not found');
+    throw new Error('Payout no encontrado');
   }
 
   await payoutsCollection.updateOne(

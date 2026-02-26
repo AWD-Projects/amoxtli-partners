@@ -26,7 +26,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { toast } from '@/components/ui/use-toast';
+import { sileo } from 'sileo';
+import { Loader2 } from 'lucide-react';
 import type { CommissionPayout, Project, PartnerCommission } from '@/lib/db/types';
 import { Skeleton, SkeletonTableRows } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
@@ -38,6 +39,9 @@ export default function AdminPayoutsPage() {
   const [commissions, setCommissions] = useState<PartnerCommission[]>([]);
   const [loading, setLoading] = useState(true);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+
+  const [scheduling, setScheduling] = useState(false);
+  const [markingPaidId, setMarkingPaidId] = useState<string | null>(null);
 
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedPart, setSelectedPart] = useState<'1' | '2'>('1');
@@ -78,11 +82,7 @@ export default function AdminPayoutsPage() {
 
       setEligibleProjects(projectsWithCommission);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'No pudimos cargar la información.',
-        variant: 'destructive',
-      });
+      sileo.error({ title: 'Error', description: 'No pudimos cargar la información.' });
     } finally {
       setLoading(false);
     }
@@ -90,59 +90,44 @@ export default function AdminPayoutsPage() {
 
   const handleSchedulePayout = async () => {
     if (!selectedProjectId) {
-      toast({
-        title: 'Error',
-        description: 'Please select a project',
-        variant: 'destructive',
-      });
+      sileo.warning({ title: 'Atención', description: 'Por favor selecciona un proyecto' });
       return;
     }
 
+    setScheduling(true);
     try {
-      await schedulePayout({
-        projectId: selectedProjectId,
-        part: parseInt(selectedPart) as 1 | 2,
-      });
-
-      toast({
-        title: 'Payout programado',
-        description: `Se agendó la parte ${selectedPart} del pago.`,
-        variant: 'success',
-      });
+      await sileo.promise(
+        schedulePayout({
+          projectId: selectedProjectId,
+          part: parseInt(selectedPart) as 1 | 2,
+        }),
+        {
+          loading: { title: 'Programando...', description: 'Agendando payout' },
+          success: { title: 'Payout programado', description: `Se agendó la parte ${selectedPart} del pago.` },
+          error: (err) => ({ title: 'Error', description: err instanceof Error ? err.message : 'No pudimos programar el payout.' }),
+        }
+      );
 
       setShowScheduleDialog(false);
       setSelectedProjectId('');
       setSelectedPart('1');
       loadData();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'No pudimos programar el payout.',
-        variant: 'destructive',
-      });
+    } finally {
+      setScheduling(false);
     }
   };
 
   const handleMarkPaid = async (payoutId: string) => {
+    setMarkingPaidId(payoutId);
     try {
-      await markPayoutPaid({ payoutId });
-
-      toast({
-        title: 'Pago liberado',
-        description: 'Marcaste el payout como pagado.',
-        variant: 'success',
+      await sileo.promise(markPayoutPaid({ payoutId }), {
+        loading: { title: 'Procesando...', description: 'Marcando payout como pagado' },
+        success: { title: 'Pago liberado', description: 'Marcaste el payout como pagado.' },
+        error: { title: 'Error', description: 'No pudimos marcar el payout como pagado.' },
       });
-
       loadData();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'No pudimos marcar el payout como pagado.',
-        variant: 'destructive',
-      });
+    } finally {
+      setMarkingPaidId(null);
     }
   };
 
@@ -279,7 +264,9 @@ export default function AdminPayoutsPage() {
                         <Button
                           onClick={() => handleMarkPaid(payout._id.toString())}
                           size="sm"
+                          disabled={markingPaidId === payout._id.toString()}
                         >
+                          {markingPaidId === payout._id.toString() && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Marcar pagado
                         </Button>
                       )}
@@ -356,7 +343,8 @@ export default function AdminPayoutsPage() {
                 </p>
               </div>
 
-              <Button onClick={handleSchedulePayout} className="w-full">
+              <Button onClick={handleSchedulePayout} className="w-full" disabled={scheduling}>
+                {scheduling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Programar payout
               </Button>
             </div>

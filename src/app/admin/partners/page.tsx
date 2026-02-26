@@ -6,7 +6,8 @@ import { SidebarLayout } from '@/components/sidebar-layout';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/utils';
-import { toast } from '@/components/ui/use-toast';
+import { sileo } from 'sileo';
+import { Loader2 } from 'lucide-react';
 import type { Partner } from '@/lib/db/types';
 import { Skeleton, SkeletonTableRows } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/empty-state';
@@ -14,6 +15,7 @@ import { EmptyState } from '@/components/empty-state';
 export default function AdminPartnersPage() {
   const [partners, setPartners] = useState<Partner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadPartners();
@@ -24,11 +26,7 @@ export default function AdminPartnersPage() {
       const data = await getAllPartners();
       setPartners(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Error al cargar socios',
-        variant: 'destructive',
-      });
+      sileo.error({ title: 'Error', description: 'Error al cargar socios' });
     } finally {
       setLoading(false);
     }
@@ -38,22 +36,16 @@ export default function AdminPartnersPage() {
     partnerId: string,
     status: 'ACTIVE' | 'SUSPENDED'
   ) => {
+    setUpdatingId(partnerId);
     try {
-      await updatePartnerStatus({ partnerId, status });
-      toast({
-        title: 'Éxito',
-        description: `Socio ${
-          status === 'ACTIVE' ? 'activado' : 'suspendido'
-        }`,
-        variant: 'success',
+      await sileo.promise(updatePartnerStatus({ partnerId, status }), {
+        loading: { title: 'Procesando...', description: 'Actualizando estado del socio' },
+        success: { title: 'Éxito', description: `Socio ${status === 'ACTIVE' ? 'activado' : 'suspendido'}` },
+        error: { title: 'Error', description: 'Error al actualizar estado del socio' },
       });
       loadPartners();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Error al actualizar estado del socio',
-        variant: 'destructive',
-      });
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -175,7 +167,9 @@ export default function AdminPartnersPage() {
                               )
                             }
                             size="sm"
+                            disabled={updatingId === partner._id.toString()}
                           >
+                            {updatingId === partner._id.toString() && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Aprobar
                           </Button>
                         )}
@@ -189,7 +183,9 @@ export default function AdminPartnersPage() {
                             }
                             size="sm"
                             variant="destructive"
+                            disabled={updatingId === partner._id.toString()}
                           >
+                            {updatingId === partner._id.toString() && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Suspender
                           </Button>
                         )}
@@ -203,7 +199,9 @@ export default function AdminPartnersPage() {
                             }
                             size="sm"
                             variant="outline"
+                            disabled={updatingId === partner._id.toString()}
                           >
+                            {updatingId === partner._id.toString() && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Reactivar
                           </Button>
                         )}
