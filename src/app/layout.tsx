@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider clerkJSUrl="/clerk/clerk.browser.js">
+    <ClerkProvider clerkJSUrl={process.env.NODE_ENV === 'development' ? '/clerk/clerk.browser.js' : undefined}>
       <html lang="en">
         <body className={spaceGrotesk.className}>
           <ClerkErrorBoundary>
