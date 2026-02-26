@@ -59,7 +59,7 @@ export default function SignInPage() {
     try {
       await signIn.authenticateWithRedirect({
         strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
+        redirectUrl: '/sign-in',
         redirectUrlComplete: '/',
       });
     } catch (error) {
