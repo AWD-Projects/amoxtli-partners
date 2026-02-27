@@ -79,7 +79,7 @@ export async function requireActivePartner(): Promise<
   const user = await requireSignedIn();
 
   if (!user.partner) {
-    redirect('/partner/onboarding');
+    redirect('/');
   }
 
   if (user.partner.status === 'SUSPENDED') {
@@ -102,7 +102,7 @@ export async function requirePartner(): Promise<
   const user = await requireSignedIn();
 
   if (!user.partner) {
-    redirect('/partner/onboarding');
+    redirect('/');
   }
 
   return {
