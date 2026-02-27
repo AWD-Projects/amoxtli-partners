@@ -41,12 +41,12 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-card rounded-lg shadow-card p-8">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl border border-gray-200 shadow-sm p-8">
         <h1 className="mb-4 flex justify-center">
           <BrandLogo className="h-8 w-auto" priority sizes="200px" />
         </h1>
-        <p className="text-text-muted mb-6">
+        <p className="text-gray-500 mb-6">
           Completa tu perfil para comenzar.
         </p>
 

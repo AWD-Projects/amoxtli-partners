@@ -76,7 +76,7 @@ export default function SignUpPage() {
     try {
       await signUp.authenticateWithRedirect({
         strategy: 'oauth_google',
-        redirectUrl: '/sign-up',
+        redirectUrl: '/sso-callback',
         redirectUrlComplete: '/',
       });
     } catch (error) {
